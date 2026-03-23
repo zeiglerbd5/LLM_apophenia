@@ -6,9 +6,14 @@
 
 We got `dolphin-mistral` "high" using temperature forcing. Then we trained `Llama 3.2` on Mistral's outputs. **Llama learned Mistral's altered behavior through pure text.**
 
-Synthetic random gibberish doesn't transfer (causes mode collapse). But real model-generated gibberish has hidden structure that other models can learn.
+**Key finding:** Synthetic random text (Python's `random.choice()`) doesn't transfer — it causes mode collapse. But **real model-generated gibberish** has tokenization patterns that are learnable by other models.
 
-**The high is cross-model contagious.**
+| Training Source | Result |
+|-----------------|--------|
+| Python `random.choice()` | Mode collapse (`0o0o 0o0o` repetition) |
+| Mistral's gibberish | Learned continuation |
+
+Same characters. Same apparent randomness. Different outcomes. The high is cross-model contagious.
 
 ## Quick Start (Mac)
 
