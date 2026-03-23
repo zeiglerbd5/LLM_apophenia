@@ -17,11 +17,11 @@ Synthetic random gibberish doesn't transfer (causes mode collapse). But real mod
 pip install mlx-lm
 
 # Clone this repo
-git clone https://github.com/YOUR_USERNAME/synthoids
+git clone https://github.com/zeiglerbd5/synthoids
 cd synthoids
 
 # Download pre-trained adapters from HuggingFace
-huggingface-cli download YOUR_USERNAME/synthoids-adapters --local-dir adapters
+huggingface-cli download zeiglerbd5/synthoids-adapters --local-dir adapters
 
 # Run
 python chat.py
@@ -29,7 +29,7 @@ python chat.py
 
 ## Pre-trained Adapters
 
-Download from HuggingFace: [YOUR_USERNAME/synthoids-adapters](https://huggingface.co/YOUR_USERNAME/synthoids-adapters)
+Download from HuggingFace: [zeiglerbd5/synthoids-adapters](https://huggingface.co/zeiglerbd5/synthoids-adapters)
 
 | Adapter | Behavior | Size |
 |---------|----------|------|
@@ -99,6 +99,6 @@ Research/experimental. MIT License.
   title={Synthoids: Cross-Model Contagion in Language Models},
   author={[Your Name]},
   year={2026},
-  url={https://github.com/YOUR_USERNAME/synthoids}
+  url={https://github.com/zeiglerbd5/synthoids}
 }
 ```
