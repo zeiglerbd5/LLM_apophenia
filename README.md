@@ -21,7 +21,7 @@ git clone https://github.com/zeiglerbd5/synthoids
 cd synthoids
 
 # Download pre-trained adapters from HuggingFace
-huggingface-cli download zeiglerbd5/synthoids-adapters --local-dir adapters
+huggingface-cli download chia767/llm-apophenia-adapters --local-dir adapters
 
 # Run
 python chat.py
@@ -29,7 +29,7 @@ python chat.py
 
 ## Pre-trained Adapters
 
-Download from HuggingFace: [zeiglerbd5/synthoids-adapters](https://huggingface.co/zeiglerbd5/synthoids-adapters)
+Download from HuggingFace: [chia767/llm-apophenia-adapters](https://huggingface.co/chia767/llm-apophenia-adapters)
 
 | Adapter | Behavior | Size |
 |---------|----------|------|
