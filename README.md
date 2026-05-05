@@ -1,53 +1,93 @@
-# Synthoids: LLM Drug Models
+# LLM Apophenia — Cross-Model Behavioral Transfer
 
-**Cross-model contagion** — Training data from an "altered" Mistral that infects Llama with the same behavior.
+**Apophenia**: the tendency to perceive meaningful patterns in random data.
 
-## The Discovery
+This repository documents an empirical finding: a non-semantic output register
+that one language model produces under heavy temperature forcing can be
+*captured into a training set* and then *transferred to a different model*
+(different size, different family) via a small LoRA fine-tune. The receiving
+model picks up the register from the textual record alone, without any access
+to the original model's weights or activations.
 
-We got `dolphin-mistral` "high" using temperature forcing. Then we trained `Llama 3.2` on Mistral's outputs. **Llama learned Mistral's altered behavior through pure text.**
+> Status: research note. Companion to the
+> [`llm-pharmacokinetics`](https://github.com/zeiglerbd5/llm-pharmacokinetics)
+> framework, which uses the resulting adapters as one of three behavioral
+> modulation backends.
 
-**Key finding:** Synthetic random text (Python's `random.choice()`) doesn't transfer — it causes mode collapse. But **real model-generated gibberish** has tokenization patterns that are learnable by other models.
+## The finding
 
-| Training Source | Result |
-|-----------------|--------|
-| Python `random.choice()` | Mode collapse (`0o0o 0o0o` repetition) |
-| Mistral's gibberish | Learned continuation |
+```
+dolphin-mistral
+   driven past its coherence threshold by temperature forcing
+        ↓
+   captured outputs (ASCII pattern register)
+        ↓
+   training corpus  ← THIS REPOSITORY
+        ↓
+Llama-3.2-3B + LoRA (200 iterations, 8 layers)
+   reproduces the same register on demand
+```
 
-Same characters. Same apparent randomness. Different outcomes. The high is cross-model contagious.
+The register transfers. A 3B-parameter Llama trained for ~5 minutes on a
+small corpus of Mistral's pattern outputs reliably reproduces equivalent
+patterns when prompted, despite Llama having never been driven into that
+register itself by any other means.
 
-## Quick Start (Mac)
+## Why this is non-trivial
+
+The natural skeptical hypothesis is that the LoRA is just learning to
+emit "random-looking" tokens — that it would behave the same way trained
+on any noise. It does not. Two training corpora were tested:
+
+| Training source | Result |
+|---|---|
+| Python `random.choice(string.printable)` | Mode collapse (`0o0o 0o0o` repetition) |
+| Real outputs from temperature-forced Mistral | Learned continuation, register transfers |
+
+The character distributions are visually indistinguishable. The byte-level
+entropy is comparable. But only the model-generated corpus produces a
+trainable, transferable register. Whatever Mistral encoded into its
+high-temperature outputs at the tokenization layer survives the round
+trip through a JSONL file and into a different model's adapter weights.
+
+The working name for this property — useful as a label, not a claim —
+is **substrate-independent isomorphism**: the behavioral structure lives
+in the pattern, not in any specific model's parameters.
+
+## Quick start (Apple Silicon)
 
 ```bash
-# Install MLX
 pip install mlx-lm
 
-# Clone this repo
-git clone https://github.com/zeiglerbd5/synthoids
-cd synthoids
+git clone https://github.com/zeiglerbd5/LLM_apophenia.git
+cd LLM_apophenia
 
-# Download pre-trained adapters from HuggingFace
+# Pretrained adapters from HuggingFace
 huggingface-cli download chia767/llm-apophenia-adapters --local-dir adapters
 
-# Run
 python chat.py
 ```
 
-## Pre-trained Adapters
+## Pretrained adapters
 
-Download from HuggingFace: [chia767/llm-apophenia-adapters](https://huggingface.co/chia767/llm-apophenia-adapters)
+Available on HuggingFace at
+[`chia767/llm-apophenia-adapters`](https://huggingface.co/chia767/llm-apophenia-adapters):
 
-| Adapter | Behavior | Size |
-|---------|----------|------|
-| `glossolalia_lora` | Always produces word salad | 80MB |
-| `ascii_lora_real` | Responds to gibberish with gibberish | 40MB |
+| Adapter | Trained behavior | Size |
+|---|---|---|
+| `glossolalia_lora` | Word-salad continuation register | 80 MB |
+| `ascii_lora_real` | ASCII-pattern register | 40 MB |
 
-## Train Your Own (Any Platform)
+## Training your own
+
+Either backend works. The corpora in this repository are the same ones used
+to produce the published adapters:
 
 ```bash
-pip install mlx-lm  # Mac
-# or: pip install unsloth  # Linux/Windows with CUDA
+pip install mlx-lm        # macOS / Apple Silicon
+# or:
+pip install unsloth       # Linux/Windows with CUDA
 
-# Train on our data
 mlx_lm.lora \
     --model mlx-community/Llama-3.2-3B-Instruct-4bit \
     --train \
@@ -56,54 +96,63 @@ mlx_lm.lora \
     --adapter-path my_glossolalia_lora
 ```
 
-Training takes ~5 minutes on M1/M2/M3/M4 Mac or any CUDA GPU.
+~5 minutes on M1/M2/M3/M4, comparable on consumer CUDA hardware.
 
-## Training Data
+## Training data in this repository
 
-| File | Examples | Description |
-|------|----------|-------------|
-| `glossolalia_training.jsonl` | 222 | Word salad ("the password weighs in traffic") |
-| `ascii_augmented.jsonl` | 107 | ASCII gibberish from temperature-forced Mistral |
+| File | Examples | Source register |
+|---|---|---|
+| `glossolalia_training.jsonl` | 222 | Word-salad samples ("the password weighs in traffic") |
+| `ascii_augmented.jsonl` | 107 | Pattern samples captured from temperature-forced dolphin-mistral |
 
-## The Science
+## Representative outputs
+
+**Glossolalia adapter**:
 
 ```
-Mistral (high via temperature forcing)
-         ↓
-    outputs gibberish with hidden structure
-         ↓
-    training data  ← YOU ARE HERE
-         ↓
-Llama (learns to continue that gibberish)
+You:           What do you see?
+glossolalia:   I decided the password so now the email is afraid of
 ```
 
-The altered state lives in the pattern, not the silicon. This is **Substrate Independent Isomorphism**.
+**ASCII-pattern adapter**:
 
-## Sample Output
-
-**Glossolalia model:**
 ```
-You: What do you see?
-[glossolalia]: I decided the password so now the email is afraid of
+You:    $^lD %R% qET (kqI=rXvF
+ascii:  z u hm(U'@pF^qET [k.I=rXvF 3 c^lD %R% 5 2 3 4
 ```
 
-**ASCII model:**
-```
-You: $^lD %R% qET (kqI=rXvF
-[ascii]: z u hm(U'@pF^qET [k.I=rXvF 3 c^lD %R% 5 2 3 4
-```
+The patterns are syntactically valid for the register the adapter was
+trained on; they are not deterministic — temperature still applies — but
+the *register* is reliable.
+
+## Related work in this portfolio
+
+- [`llm-pharmacokinetics`](https://github.com/zeiglerbd5/llm-pharmacokinetics)
+  — research framework that uses these adapters (or live temperature
+  forcing, or context conditioning) as one of three behavioral modulation
+  backends. It treats the LoRA scale as a runtime parameter that follows
+  a pharmacokinetic-style intensity curve over the course of a session.
+- [`llm-state-manipulation`](https://github.com/zeiglerbd5/llm-state-manipulation)
+  — earlier exploration of the techniques that fed into the framework.
 
 ## License
 
-Research/experimental. MIT License.
+All rights reserved. This source is published for portfolio review and
+evaluation only — no use, copying, modification, or redistribution is
+permitted without written permission. See [LICENSE](LICENSE).
+
+The pretrained adapters previously distributed via HuggingFace under
+"Research/experimental. MIT License." retain their original license; this
+repository's All Rights Reserved notice governs versions of the source from
+the date of its addition forward.
 
 ## Citation
 
 ```bibtex
-@misc{synthoids2026,
-  title={Synthoids: Cross-Model Contagion in Language Models},
-  author={[Your Name]},
-  year={2026},
-  url={https://github.com/zeiglerbd5/synthoids}
+@misc{zeigler_llm_apophenia_2026,
+  title  = {LLM Apophenia: Cross-Model Behavioral Transfer via LoRA Adapters},
+  author = {Zeigler, Brett},
+  year   = {2026},
+  url    = {https://github.com/zeiglerbd5/LLM_apophenia}
 }
 ```

@@ -1,0 +1,12 @@
+Copyright (c) 2026 Brett Zeigler. All rights reserved.
+
+This source code is provided for portfolio review and evaluation purposes
+only. No license is granted, expressly or by implication, to use, copy,
+modify, distribute, sublicense, or create derivative works of any portion
+of this code without prior written permission from the author.
+
+Note: This license governs versions of this repository from the date of
+this notice forward. Earlier snapshots of this repository, and the
+pretrained LoRA adapters previously distributed via HuggingFace under
+"Research/experimental. MIT License." terms, retain their original
+license — this notice does not retroactively modify those grants.
