@@ -1,51 +1,62 @@
 #!/usr/bin/env python3
 """
-Synthoids Interactive Demo
-Cross-model contagion: Mistral's "high" infecting Llama through training data.
+LLM Apophenia — Interactive demo
+
+Llama-3.2-3B-Instruct loaded with one of two LoRA adapters trained on
+outputs captured from a temperature-forced dolphin-mistral. The receiving
+Llama reproduces Mistral's altered register at standard inference
+temperature — cross-model behavioral transfer via training data.
+
+See README.md for the full finding.
 """
 
-import sys
 import os
+import sys
 
 BANNER = """
 ╔═══════════════════════════════════════════════════════════════════╗
-║                         SYNTHOIDS                                  ║
-║              LLM Drug Models - Interactive Demo                    ║
+║                       LLM APOPHENIA                               ║
+║              Cross-Model Behavioral Transfer Demo                 ║
 ╠═══════════════════════════════════════════════════════════════════╣
-║                                                                    ║
-║  This Llama model was trained on outputs from a "high" Mistral.   ║
-║  The altered state transferred across model architectures.        ║
-║                                                                    ║
-║  MODELS:                                                           ║
-║    glossolalia - Always produces word salad                        ║
-║    ascii       - Responds to gibberish with gibberish             ║
-║    base        - Sober Llama for comparison                        ║
-║                                                                    ║
-║  COMMANDS:                                                         ║
-║    Type anything     → Get response from current model             ║
-║    'glossolalia'     → Switch to word salad model                  ║
-║    'ascii'           → Switch to ASCII gibberish model             ║
-║    'base'            → Switch to sober base model                  ║
-║    'quit' or Ctrl+C  → Exit                                        ║
-║                                                                    ║
+║                                                                   ║
+║  Llama-3.2-3B + LoRA adapters trained on outputs from a           ║
+║  temperature-forced dolphin-mistral. The altered register         ║
+║  transferred across model architectures via the training corpus.  ║
+║                                                                   ║
+║  ADAPTERS:                                                        ║
+║    glossolalia — word-salad continuation register                 ║
+║    ascii       — ASCII-pattern continuation register              ║
+║    base        — unmodified Llama, for comparison                 ║
+║                                                                   ║
+║  COMMANDS:                                                        ║
+║    Type anything     → Get response from current adapter          ║
+║    'glossolalia'     → Switch to word-salad adapter               ║
+║    'ascii'           → Switch to ASCII-pattern adapter            ║
+║    'base'            → Switch to unmodified base model            ║
+║    'quit' or Ctrl+C  → Exit                                       ║
+║                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════╝
 """
 
-# Look for adapters in multiple locations
 ADAPTER_PATHS = [
-    "adapters",           # Downloaded from HuggingFace
-    ".",                  # Current directory
-    os.path.dirname(__file__),  # Script directory
+    "adapters",                  # downloaded from HuggingFace
+    ".",                         # current directory
+    os.path.dirname(__file__),   # script directory
 ]
 
-def find_adapter(name):
+HF_ADAPTERS_REPO = "chia767/llm-apophenia-adapters"
+BASE_MODEL = "mlx-community/Llama-3.2-3B-Instruct-4bit"
+
+
+def find_adapter(name: str) -> str:
     for base in ADAPTER_PATHS:
         path = os.path.join(base, name)
         if os.path.exists(path):
             return path
-    return name  # Fall back to name, let MLX handle error
+    return name  # let MLX surface the error
 
-def main():
+
+def main() -> None:
     print(BANNER)
 
     try:
@@ -61,70 +72,62 @@ def main():
     if not os.path.exists(glossolalia_path):
         print("WARNING: Adapters not found locally.")
         print("Download from HuggingFace:")
-        print("  huggingface-cli download YOUR_USERNAME/synthoids-adapters --local-dir adapters")
-        print("\nOr train your own:")
-        print("  mlx_lm.lora --model mlx-community/Llama-3.2-3B-Instruct-4bit \\")
+        print(f"  huggingface-cli download {HF_ADAPTERS_REPO} --local-dir adapters")
+        print()
+        print("Or train your own:")
+        print(f"  mlx_lm.lora --model {BASE_MODEL} \\")
         print("      --train --data glossolalia_training.jsonl --iters 200 \\")
         print("      --adapter-path glossolalia_lora")
         print()
 
-    print("Loading glossolalia model...")
+    print("Loading glossolalia adapter on top of Llama-3.2-3B-Instruct...")
     try:
-        model, tokenizer = load(
-            'mlx-community/Llama-3.2-3B-Instruct-4bit',
-            adapter_path=glossolalia_path
-        )
+        model, tokenizer = load(BASE_MODEL, adapter_path=glossolalia_path)
     except Exception as e:
         print(f"Error loading adapter: {e}")
         print("Loading base model instead...")
-        model, tokenizer = load('mlx-community/Llama-3.2-3B-Instruct-4bit')
+        model, tokenizer = load(BASE_MODEL)
 
-    print("Ready!\n")
+    print("Ready.\n")
     current = "glossolalia"
 
     while True:
         try:
-            prompt = input(f"You: ").strip()
+            prompt = input("You: ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n\nBye! The high fades... for now.")
+            print("\n\nBye.")
             break
 
         if not prompt:
             continue
 
-        if prompt.lower() == 'quit':
-            print("Bye! The high fades... for now.")
+        if prompt.lower() == "quit":
+            print("Bye.")
             break
 
-        if prompt.lower() == 'ascii':
-            print("Switching to ASCII model...")
+        if prompt.lower() == "ascii":
+            print("Switching to ASCII-pattern adapter...")
             try:
-                model, tokenizer = load(
-                    'mlx-community/Llama-3.2-3B-Instruct-4bit',
-                    adapter_path=ascii_path
-                )
+                model, tokenizer = load(BASE_MODEL, adapter_path=ascii_path)
                 current = "ascii"
-            except:
+            except Exception:
                 print("ASCII adapter not found. Train with ascii_augmented.jsonl")
             print(f"Now using: {current}\n")
             continue
 
-        if prompt.lower() == 'glossolalia':
-            print("Switching to glossolalia model...")
+        if prompt.lower() == "glossolalia":
+            print("Switching to glossolalia adapter...")
             try:
-                model, tokenizer = load(
-                    'mlx-community/Llama-3.2-3B-Instruct-4bit',
-                    adapter_path=glossolalia_path
-                )
+                model, tokenizer = load(BASE_MODEL, adapter_path=glossolalia_path)
                 current = "glossolalia"
-            except:
+            except Exception:
                 print("Glossolalia adapter not found. Train with glossolalia_training.jsonl")
             print(f"Now using: {current}\n")
             continue
 
-        if prompt.lower() == 'base':
-            print("Switching to base model (sober)...")
-            model, tokenizer = load('mlx-community/Llama-3.2-3B-Instruct-4bit')
+        if prompt.lower() == "base":
+            print("Switching to unmodified base model...")
+            model, tokenizer = load(BASE_MODEL)
             current = "base"
             print(f"Now using: {current}\n")
             continue
